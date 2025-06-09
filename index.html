@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Live Stream Player</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: #181818;
+    overflow: hidden;
+  }
+  #content {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #181818;
+  }
+  .message-container {
+    color: #fff;
+    font-size: 1.2rem;
+    text-align: center;
+    padding: 2rem;
+  }
+  #jwplayerDiv {
+    width: 100vw;
+    height: 100vh;
+    min-height: 300px;
+    background: #000;
+    position: fixed;
+    top: 0;
+    left: 0;
+  }
+  /* Force JWPlayer controlbar to always show and be visible */
+  .jwplayer .jw-controlbar {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    display: flex !important;
+    visibility: visible !important;
+  }
+  .jwplayer .jw-controls {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+  }
+</style>
+<script src="https://content.jwplatform.com/libraries/SAHhwvZq.js"></script>
+</head>
+<body>
+<div id="content">
+  Loading...
+</div>
+<script>
+(function() {
+  // Helper to get URL param 'id'
+  function getQueryParam(name) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(name);
+  }
+
+  const hlsUrl = getQueryParam('id');
+  const contentDiv = document.getElementById('content');
+
+  if (!hlsUrl) {
+    contentDiv.innerHTML = '<div class="message-container">No HLS link provided in URL.<br>Use ?id=YOUR_HLS_LINK</div>';
+    return;
+  }
+
+  if (!hlsUrl.includes('.m3u8')) {
+    contentDiv.innerHTML = '<div class="message-container">Invalid HLS link.</div>';
+    return;
+  }
+
+  // Clear loading
+  contentDiv.innerHTML = '<div id="jwplayerDiv"></div>';
+
+  // Optional: Intercept network requests if you need to rewrite domains (remove if not needed)
+  (function interceptNetworkRequests() {
+    const originalOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url) {
+      if (url.includes('sonydaimenew.akamaized.net')) {
+        url = url.replace('sonydaimenew.akamaized.net', 'sony.cricsterspkl.io/event.php');
+      } else if (url.includes('sonypartnersdaimenew.akamaized.net')) {
+        url = url.replace('sonypartnersdaimenew.akamaized.net', 'sony.cricsterspkl.io/event.php');
+      }
+      return originalOpen.apply(this, arguments);
+    };
+  })();
+
+  // Setup JWPlayer
+  const playerInstance = jwplayer("jwplayerDiv").setup({
+    playlist: [{
+      title: 'Live Stream',
+      description: "Live HLS Stream",
+      sources: [{
+        file: hlsUrl,
+        type: "hls",
+        label: "1080p",
+        default: true
+      }]
+    }],
+    width: "100%",
+    height: "100%",
+    autostart: true,
+    controls: true
+  });
+
+  // Force controls to always show (API)
+  playerInstance.on('ready', function() {
+    playerInstance.setControls(true);
+  });
+})();
+</script>
+</body>
+</html>
